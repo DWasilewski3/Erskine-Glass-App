@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quote · Erskine &amp; Sons</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="Erskine &amp; Sons" class="brand-logo" />
+      <div>
+        <div class="brand-name">{{ catalog.company.name }}</div>
+        <div class="brand-tag">{{ catalog.company.tagline }}</div>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span>{{ catalog.company.phone }}</span>
+      <span><a href="{{ catalog.company.website }}" target="_blank" rel="noopener">erskineson.com</a></span>
+    </div>
+    <nav>
+      <a class="active" href="/">Quote</a>
+      <a href="/settings">Settings</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <div class="card-head">
+        <h1>Quote</h1>
+        <div class="muted" id="quote-number-label"></div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Client
+          <div class="row-split">
+            <select id="client-id">
+              <option value="">Select a client…</option>
+              {% for client in clients %}
+              <option value="{{ client.id }}">{{ client.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn secondary" id="btn-add-client">Add client</button>
+          </div>
+        </label>
+        <label>
+          Date
+          <input type="date" id="quote-date" value="{{ today }}" />
+        </label>
+        <label class="span-2">
+          Job notes
+          <input type="text" id="notes" placeholder="Optional notes for this quote" />
+        </label>
+      </div>
+
+      <div class="past-wrap">
+        <label>
+          Past quotes for this client
+          <select id="past-quotes">
+            <option value="">No saved quotes yet</option>
+          </select>
+        </label>
+        <button type="button" class="btn secondary" id="btn-load-quote">Load</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Line items</h2>
+        <button type="button" class="btn" id="btn-add-line">Add line</button>
+      </div>
+      <div class="table-wrap">
+        <table class="lines" id="lines-table">
+          <thead>
+            <tr>
+              <th>Qty</th>
+              <th>Width</th>
+              <th>Height</th>
+              <th>Thick</th>
+              <th>Type</th>
+              <th>Grid</th>
+              <th>Spacer</th>
+              <th>Color</th>
+              <th>VERT</th>
+              <th>HORI</th>
+              <th>SqFt</th>
+              <th>Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="totals-bar">
+      <div><span class="muted">Qty</span> <strong id="qty-total">0</strong></div>
+      <div><span class="muted">SqFt</span> <strong id="sqft-total">0</strong></div>
+      <div class="grand"><span class="muted">Total</span> <strong id="grand-total">$0.00</strong></div>
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn primary" id="btn-save">Save quote</button>
+      <button type="button" class="btn" id="btn-email">Generate email</button>
+      <div class="dropdown" id="download-menu">
+        <button type="button" class="btn" id="btn-download" aria-haspopup="true" aria-expanded="false">
+          Download
+          <span class="caret" aria-hidden="true"></span>
+        </button>
+        <div class="dropdown-list" id="download-list" hidden>
+          <button type="button" data-download="pdf">PDF</button>
+          <button type="button" data-download="xlsx">Excel</button>
+          <button type="button" data-download="csv">CSV</button>
+        </div>
+      </div>
+      <button type="button" class="btn" id="btn-needed">Glass Needed CSV</button>
+      <button type="button" class="btn ghost" id="btn-clear">Clear</button>
+    </section>
+    <p class="status" id="status"></p>
+  </main>
+
+  <dialog id="client-dialog">
+    <form method="dialog" id="client-form">
+      <h2>Add client</h2>
+      <label>Name <input name="name" required /></label>
+      <label>Phone <input name="phone" /></label>
+      <label>Email <input name="email" type="email" /></label>
+      <label>Address <input name="address" /></label>
+      <label>Notes <input name="notes" /></label>
+      <div class="dialog-actions">
+        <button type="submit" class="btn primary">Save client</button>
+        <button type="button" class="btn ghost" id="btn-cancel-client">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="application/json" id="catalog-data">{{ catalog | tojson }}</script>
+  <script src="{{ url_for('static', filename='js/quote.js') }}"></script>
+</body>
+</html>

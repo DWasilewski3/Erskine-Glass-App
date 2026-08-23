@@ -1,0 +1,114 @@
+{
+  "company": {
+    "name": "Erskine & Sons",
+    "tagline": "Glass and Window Specialist",
+    "phone": "(616) 878-3993",
+    "email": "erskineson@erskineson.com",
+    "city": "Byron Center, MI",
+    "website": "https://www.erskineson.com/",
+    "fax": "616-878-4892",
+    "hours": "Mon\u2013Fri 8:00 am \u2013 5:00 pm"
+  },
+  "emails": [
+    "roberttcoe@gmail.com",
+    "bob_coe@yahoo.com",
+    "erskineson@erskineson.com"
+  ],
+  "multipliers": {
+    "tfee": 1.06,
+    "factor": 1.75,
+    "mup": 1.2
+  },
+  "glass_types": [
+    {
+      "name": "Annealed",
+      "price": 10
+    },
+    {
+      "name": "LO E Annealed",
+      "price": 12.25
+    },
+    {
+      "name": "1/4 Annealed",
+      "price": 11
+    },
+    {
+      "name": "1/4 LO E",
+      "price": 15.5
+    },
+    {
+      "name": "Annealed Tempered",
+      "price": 14
+    },
+    {
+      "name": "LO E Tempered",
+      "price": 16.5
+    },
+    {
+      "name": "1/4 Annealed Temp.",
+      "price": 16.25
+    },
+    {
+      "name": "1/4 LO E Tempered",
+      "price": 19
+    },
+    {
+      "name": "3/16 Anneal",
+      "price": 10.5
+    },
+    {
+      "name": "3/16 Annealed Temp.",
+      "price": 15.5
+    },
+    {
+      "name": "3/16 Raindrop",
+      "price": 5
+    }
+  ],
+  "grids": [
+    {
+      "name": "Colonial",
+      "price": 4
+    },
+    {
+      "name": "Contour",
+      "price": 5
+    },
+    {
+      "name": "Prairie",
+      "price": 5
+    }
+  ],
+  "spacers": [
+    {
+      "name": "Bronze",
+      "price": 3
+    }
+  ],
+  "colors": [
+    "White",
+    "Tan",
+    "Bronze",
+    "Sand Tone",
+    "Black",
+    "Beige"
+  ],
+  "vert": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "hori": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ]
+}

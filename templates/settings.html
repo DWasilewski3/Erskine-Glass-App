@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · Erskine &amp; Sons</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo.webp') }}" alt="Erskine &amp; Sons" class="brand-logo" />
+      <div>
+        <div class="brand-name">{{ catalog.company.name }}</div>
+        <div class="brand-tag">Settings</div>
+      </div>
+    </div>
+    <nav>
+      <a href="/">Quote</a>
+      <a class="active" href="/settings">Settings</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="card">
+      <div class="card-head"><h1>Company</h1></div>
+      <div class="form-grid">
+        <label>Name <input id="co-name" /></label>
+        <label>Tagline <input id="co-tagline" /></label>
+        <label>Phone <input id="co-phone" /></label>
+        <label>Email <input id="co-email" /></label>
+        <label>City <input id="co-city" /></label>
+        <label>Website <input id="co-website" /></label>
+        <label>Fax <input id="co-fax" /></label>
+        <label>Hours <input id="co-hours" /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Multipliers</h2></div>
+      <div class="form-grid three">
+        <label>TFee <input id="m-tfee" type="number" step="0.01" /></label>
+        <label>Factor <input id="m-factor" type="number" step="0.01" /></label>
+        <label>Mup <input id="m-mup" type="number" step="0.01" /></label>
+      </div>
+      <p class="hint">Excel formula: SqFt × (glass + grid) × TFee × Factor × Mup. Spacer is stored but not priced.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Glass types</h2>
+        <button type="button" class="btn" data-add="glass">Add</button>
+      </div>
+      <table class="edit" id="glass-table">
+        <thead><tr><th>Name</th><th>Price</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Grids</h2>
+        <button type="button" class="btn" data-add="grids">Add</button>
+      </div>
+      <table class="edit" id="grids-table">
+        <thead><tr><th>Name</th><th>Price</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Spacers</h2>
+        <button type="button" class="btn" data-add="spacers">Add</button>
+      </div>
+      <table class="edit" id="spacers-table">
+        <thead><tr><th>Name</th><th>Price</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Colors</h2>
+        <button type="button" class="btn" data-add="colors">Add</button>
+      </div>
+      <div id="colors-list" class="chip-list"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>VERT / HORI options</h2></div>
+      <div class="form-grid">
+        <label>VERT (comma separated) <input id="vert-list" /></label>
+        <label>HORI (comma separated) <input id="hori-list" /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Clients</h2>
+      </div>
+      <p class="hint">Removing a client does not delete their quote folders.</p>
+      <table class="edit" id="clients-table">
+        <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Address</th><th>Notes</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn primary" id="btn-save-settings">Save catalog</button>
+    </section>
+    <p class="status" id="status"></p>
+  </main>
+
+  <script type="application/json" id="catalog-data">{{ catalog | tojson }}</script>
+  <script type="application/json" id="clients-data">{{ clients | tojson }}</script>
+  <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>
