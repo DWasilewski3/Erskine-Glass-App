@@ -45,7 +45,7 @@ def line_total(
     """Excel: SqFt * (glass_price + grid_price) * TFee * Factor * Mup.
 
     Blank Type uses glass price 1. Blank Grid uses 0.
-    Spacer / Color / VERT / HORI do not affect the total.
+    Color / VERT / HORI do not affect the total.
     """
     if sqft <= 0:
         return 0.0
@@ -60,6 +60,7 @@ def line_total(
 
 def price_line(line: dict, catalog: dict) -> dict:
     out = dict(line)
+    out.pop("spacer", None)
     sqft = line_sqft(line.get("width"), line.get("height"), line.get("qty"))
     total = line_total(sqft, line.get("type"), line.get("grid"), catalog)
     out["sqft"] = sqft

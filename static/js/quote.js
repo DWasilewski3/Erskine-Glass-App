@@ -44,7 +44,6 @@ function addLine(line = {}) {
     <td><input class="thick" value="${escapeHtml(String(line.thick ?? ""))}" /></td>
     <td><select class="type">${options(catalog.glass_types || [], line.type, "name")}</select></td>
     <td><select class="grid">${options(catalog.grids || [], line.grid, "name")}</select></td>
-    <td><select class="spacer">${options(catalog.spacers || [], line.spacer, "name")}</select></td>
     <td><select class="color">${options(catalog.colors || [], line.color)}</select></td>
     <td><select class="vert">${options(catalog.vert || [], line.vert)}</select></td>
     <td><select class="hori">${options(catalog.hori || [], line.hori)}</select></td>
@@ -71,7 +70,6 @@ function collectPayload() {
     thick: tr.querySelector(".thick").value,
     type: tr.querySelector(".type").value,
     grid: tr.querySelector(".grid").value,
-    spacer: tr.querySelector(".spacer").value,
     color: tr.querySelector(".color").value,
     vert: tr.querySelector(".vert").value,
     hori: tr.querySelector(".hori").value,
@@ -265,14 +263,16 @@ document.addEventListener("click", closeDownloadMenu);
 document.getElementById("btn-needed").addEventListener("click", () =>
   download("/api/export/glass-needed", "glass_needed.csv")
 );
-document.getElementById("btn-email").addEventListener("click", async () => {
-  const btn = document.getElementById("btn-email");
+document.getElementById("btn-needed-pdf").addEventListener("click", () =>
+  download("/api/export/glass-needed-pdf", "glass_needed.pdf")
+);
+async function draftEmail(url, btn, messages) {
   const payload = collectPayload();
   if (!payload.client_id) {
     setStatus("Select or add a client first.", false);
     return;
   }
-  const res = await fetch("/api/email", {
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -296,13 +296,25 @@ document.getElementById("btn-email").addEventListener("click", async () => {
     btn.textContent = original;
   }, 1800);
   if (data.opened && data.to) {
-    setStatus("Email draft opened with the PDF attached. Message copied.");
+    setStatus(messages.openedTo);
   } else if (data.opened) {
-    setStatus("Message copied. Draft opened. Add an email on the client to fill in To.");
+    setStatus(messages.opened);
   } else {
     setStatus("Message copied. Could not open the mail app automatically.");
   }
-});
+}
+document.getElementById("btn-email").addEventListener("click", () =>
+  draftEmail("/api/email", document.getElementById("btn-email"), {
+    openedTo: "Email draft opened with the PDF attached. Message copied.",
+    opened: "Message copied. Draft opened. Add an email on the client to fill in To.",
+  })
+);
+document.getElementById("btn-email-manufacturer").addEventListener("click", () =>
+  draftEmail("/api/email/manufacturer", document.getElementById("btn-email-manufacturer"), {
+    openedTo: "Manufacturer email opened with the glass needed PDF. Message copied.",
+    opened: "Message copied. Draft opened.",
+  })
+);
 
 const dialog = document.getElementById("client-dialog");
 document.getElementById("btn-add-client").addEventListener("click", () => dialog.showModal());

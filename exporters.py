@@ -29,7 +29,6 @@ LINE_COLUMNS = [
     ("thick", "Thick"),
     ("type", "Type"),
     ("grid", "Grid"),
-    ("spacer", "Spacer"),
     ("color", "Color"),
     ("vert", "VERT"),
     ("hori", "HORI"),
@@ -44,7 +43,6 @@ NEEDED_COLUMNS = [
     ("thick", "Thick"),
     ("type", "Type"),
     ("grid", "Grid"),
-    ("spacer", "Spacer"),
     ("color", "Color"),
     ("vert", "VERT"),
     ("hori", "HORI"),
@@ -69,12 +67,13 @@ def _num(value) -> str:
         return str(value)
 
 
-def render_pdf_html(quote: dict, catalog: dict) -> str:
+def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
     company = catalog.get("company") or {}
     client = quote.get("client") or {}
     logo = _logo_data_uri()
     rows = []
     for line in quote.get("lines") or []:
+        amount = "" if needed else f"<td class='r'>{_money(line.get('total'))}</td>"
         rows.append(
             "<tr>"
             f"<td class='c'>{_num(line.get('qty'))}</td>"
@@ -82,44 +81,65 @@ def render_pdf_html(quote: dict, catalog: dict) -> str:
             f"<td class='c'>{line.get('thick') or ''}</td>"
             f"<td>{line.get('type') or ''}</td>"
             f"<td>{line.get('grid') or ''}</td>"
-            f"<td>{line.get('spacer') or ''}</td>"
             f"<td>{line.get('color') or ''}</td>"
             f"<td class='c'>{_num(line.get('vert'))}/{_num(line.get('hori'))}</td>"
             f"<td class='c'>{_num(line.get('sqft'))}</td>"
-            f"<td class='r'>{_money(line.get('total'))}</td>"
+            f"{amount}"
             "</tr>"
         )
     notes = quote.get("notes") or ""
     notes_html = f"<p class='notes'><b>Notes:</b> {notes}</p>" if notes else ""
     logo_html = f"<img class='logo' src='{logo}' />" if logo else ""
+    title = "GLASS NEEDED" if needed else "QUOTE"
+    amount_th = "" if needed else "<th>Amount</th>"
+    empty_cols = "8" if needed else "9"
+    if needed:
+        totals = (
+            f"Qty {_num(quote.get('qty_total'))}"
+            f"&nbsp;&nbsp; SqFt {_num(quote.get('sqft_total'))}"
+        )
+        foot = (
+            "Please use this list for the glass order. "
+            f"Call {company.get('phone') or ''} with questions."
+        )
+    else:
+        totals = (
+            f"Qty {_num(quote.get('qty_total'))}"
+            f"&nbsp;&nbsp; SqFt {_num(quote.get('sqft_total'))}<br/>"
+            f"<span class='grand'>Total <span class='gold'>{_money(quote.get('grand_total'))}</span></span>"
+        )
+        foot = (
+            "Thank you for the opportunity to quote your glass. This quote is valid for 30 days. "
+            f"Call {company.get('phone') or ''} for questions."
+        )
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
   @page {{ size: letter; margin: 0.55in; }}
-  body {{ font-family: Helvetica, Arial, sans-serif; color: #1A1612; font-size: 10pt; }}
+  body {{ font-family: Helvetica, Arial, sans-serif; color: #000000; font-size: 10pt; }}
   .header {{ background-color: #1A1612; color: #F4F1EA; padding: 14px 16px; }}
   .logo {{ height: 58px; }}
   .co {{ font-size: 16pt; color: #C4A35A; font-weight: bold; }}
-  .tag {{ font-size: 9pt; color: #F4F1EA; }}
-  .contact {{ font-size: 8.5pt; color: #F4F1EA; margin-top: 4px; }}
-  h1 {{ font-size: 16pt; color: #1A1612; margin: 16px 0 8px 0; letter-spacing: 1px; }}
-  .meta td {{ padding: 2px 18px 2px 0; font-size: 10pt; }}
+  .tag {{ font-size: 9pt; color: #000000; margin-top: 8px; }}
+  .contact {{ font-size: 8.5pt; color: #000000; margin-top: 2px; }}
+  h1 {{ font-size: 16pt; color: #000000; margin: 16px 0 8px 0; letter-spacing: 1px; }}
+  .meta td {{ padding: 2px 18px 2px 0; font-size: 10pt; color: #000000; }}
   table.lines {{ width: 100%; border-collapse: collapse; margin-top: 12px; }}
   table.lines th {{
     background-color: #1A1612; color: #F4F1EA; font-size: 8pt;
     padding: 6px 5px; text-align: left;
   }}
-  table.lines td {{ border-bottom: 1px solid #B8B0A4; padding: 6px 5px; font-size: 9pt; color: #1A1612; }}
+  table.lines td {{ border-bottom: 1px solid #B8B0A4; padding: 6px 5px; font-size: 9pt; color: #000000; }}
   .c {{ text-align: center; }}
   .r {{ text-align: right; }}
   .totals {{ margin-top: 12px; width: 100%; }}
-  .totals td {{ padding: 4px 0; }}
-  .grand {{ font-size: 13pt; font-weight: bold; color: #1A1612; }}
+  .totals td {{ padding: 4px 0; color: #000000; }}
+  .grand {{ font-size: 13pt; font-weight: bold; color: #000000; }}
   .gold {{ color: #C4A35A; }}
-  .notes {{ margin-top: 16px; font-size: 9pt; }}
-  .foot {{ margin-top: 22px; font-size: 8pt; color: #2A2622; border-top: 2px solid #C4A35A; padding-top: 8px; }}
+  .notes {{ margin-top: 16px; font-size: 9pt; color: #000000; }}
+  .foot {{ margin-top: 22px; font-size: 8pt; color: #000000; border-top: 2px solid #C4A35A; padding-top: 8px; }}
 </style>
 </head>
 <body>
@@ -128,17 +148,17 @@ def render_pdf_html(quote: dict, catalog: dict) -> str:
       <td width="90">{logo_html}</td>
       <td>
         <div class="co">{company.get("name") or "Erskine &amp; Sons"}</div>
-        <div class="tag">{company.get("tagline") or ""}</div>
-        <div class="contact">
-          {company.get("phone") or ""}
-          · {company.get("email") or ""}
-          · {company.get("city") or ""}
-          · {company.get("website") or ""}
-        </div>
       </td>
     </tr></table>
   </div>
-  <h1>QUOTE</h1>
+  <div class="tag">{company.get("tagline") or ""}</div>
+  <div class="contact">
+    {company.get("phone") or ""}
+    · {company.get("email") or ""}
+    · {company.get("city") or ""}
+    · {company.get("website") or ""}
+  </div>
+  <h1>{title}</h1>
   <table class="meta">
     <tr>
       <td><b>Customer</b><br/>{client.get("name") or ""}</td>
@@ -154,40 +174,44 @@ def render_pdf_html(quote: dict, catalog: dict) -> str:
     <thead>
       <tr>
         <th>Qty</th><th>W × H</th><th>Thick</th><th>Type</th><th>Grid</th>
-        <th>Spacer</th><th>Color</th><th>V/H</th><th>SqFt</th><th>Amount</th>
+        <th>Color</th><th>V/H</th><th>SqFt</th>{amount_th}
       </tr>
     </thead>
     <tbody>
-      {"".join(rows) or "<tr><td colspan='10'>No line items</td></tr>"}
+      {"".join(rows) or f"<tr><td colspan='{empty_cols}'>No line items</td></tr>"}
     </tbody>
   </table>
   <table class="totals">
     <tr>
       <td></td>
       <td class="r" width="240">
-        Qty {_num(quote.get("qty_total"))}
-        &nbsp;&nbsp; SqFt {_num(quote.get("sqft_total"))}<br/>
-        <span class="grand">Total <span class="gold">{_money(quote.get("grand_total"))}</span></span>
+        {totals}
       </td>
     </tr>
   </table>
   {notes_html}
   <div class="foot">
-    Thank you for the opportunity to quote your glass. This quote is valid for 30 days.
-    Call {company.get("phone") or ""} for questions.
+    {foot}
   </div>
 </body>
 </html>
 """
 
 
-def build_pdf(quote: dict, catalog: dict) -> bytes:
-    html = render_pdf_html(quote, catalog)
+def _html_to_pdf(html: str) -> bytes:
     buf = io.BytesIO()
     result = pisa.CreatePDF(html, dest=buf, encoding="utf-8")
     if result.err:
         raise RuntimeError("PDF generation failed.")
     return buf.getvalue()
+
+
+def build_pdf(quote: dict, catalog: dict) -> bytes:
+    return _html_to_pdf(render_pdf_html(quote, catalog, needed=False))
+
+
+def build_glass_needed_pdf(quote: dict, catalog: dict) -> bytes:
+    return _html_to_pdf(render_pdf_html(quote, catalog, needed=True))
 
 
 def build_csv(quote: dict) -> str:
@@ -247,22 +271,22 @@ def build_xlsx(quote: dict, catalog: dict) -> bytes:
     title_font = Font(color=cream, name="Calibri", size=11)
     money_format = '"$"#,##0.00'
 
-    ws.merge_cells("A1:L2")
+    ws.merge_cells("A1:K2")
     ws["A1"] = f"{company.get('name') or 'Erskine & Sons'}  —  {company.get('tagline') or ''}"
     ws["A1"].font = gold_font
     ws["A1"].fill = header_fill
     ws["A1"].alignment = Alignment(vertical="center", indent=1)
-    for col in range(1, 13):
+    for col in range(1, 12):
         ws.cell(1, col).fill = header_fill
         ws.cell(2, col).fill = header_fill
-    ws.merge_cells("A3:L3")
+    ws.merge_cells("A3:K3")
     ws["A3"] = (
         f"{company.get('phone') or ''}  ·  {company.get('email') or ''}  ·  "
         f"{company.get('city') or ''}  ·  {company.get('website') or ''}"
     )
     ws["A3"].font = title_font
     ws["A3"].fill = header_fill
-    for col in range(1, 13):
+    for col in range(1, 12):
         ws.cell(3, col).fill = header_fill
 
     ws["A5"] = "Customer"
@@ -276,7 +300,7 @@ def build_xlsx(quote: dict, catalog: dict) -> bytes:
     ws["D6"] = "Address"
     ws["E6"] = client.get("address") or ""
     ws["A7"] = "Notes"
-    ws.merge_cells("B7:L7")
+    ws.merge_cells("B7:K7")
     ws["B7"] = quote.get("notes") or ""
 
     headers = [label for _, label in LINE_COLUMNS]
@@ -293,7 +317,7 @@ def build_xlsx(quote: dict, catalog: dict) -> bytes:
         for i, value in enumerate(values, start=1):
             cell = ws.cell(row, i, value if value not in (None, "") else None)
             cell.border = thin
-            if i == 12:
+            if i == 11:
                 cell.number_format = money_format
         row += 1
 
@@ -309,7 +333,7 @@ def build_xlsx(quote: dict, catalog: dict) -> bytes:
     total_cell.font = Font(bold=True, size=14, color=dark)
     total_cell.number_format = money_format
 
-    widths = [8, 10, 10, 10, 22, 12, 12, 12, 8, 8, 10, 12]
+    widths = [8, 10, 10, 10, 22, 12, 12, 8, 8, 10, 12]
     for i, width in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
     ws.page_setup.orientation = "landscape"

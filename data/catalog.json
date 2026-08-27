@@ -9,6 +9,10 @@
     "fax": "616-878-4892",
     "hours": "Mon\u2013Fri 8:00 am \u2013 5:00 pm"
   },
+  "manufacturer": {
+    "name": "Trulite",
+    "email": "kbloink@trulite.com"
+  },
   "emails": [
     "roberttcoe@gmail.com",
     "bob_coe@yahoo.com",
@@ -77,12 +81,6 @@
     {
       "name": "Prairie",
       "price": 5
-    }
-  ],
-  "spacers": [
-    {
-      "name": "Bronze",
-      "price": 3
     }
   ],
   "colors": [

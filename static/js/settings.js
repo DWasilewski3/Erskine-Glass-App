@@ -80,7 +80,6 @@ document.querySelectorAll("[data-add]").forEach((btn) => {
     const kind = btn.dataset.add;
     if (kind === "glass") addNamedRow(document.querySelector("#glass-table tbody"));
     if (kind === "grids") addNamedRow(document.querySelector("#grids-table tbody"));
-    if (kind === "spacers") addNamedRow(document.querySelector("#spacers-table tbody"));
     if (kind === "colors") addColor();
   });
 });
@@ -98,6 +97,7 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
       hours: document.getElementById("co-hours").value,
     },
     emails: catalog.emails || [],
+    manufacturer: catalog.manufacturer || { name: "Trulite", email: "kbloink@trulite.com" },
     multipliers: {
       tfee: Number(document.getElementById("m-tfee").value || 1),
       factor: Number(document.getElementById("m-factor").value || 1),
@@ -105,7 +105,6 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
     },
     glass_types: readNamed(document.querySelector("#glass-table tbody")),
     grids: readNamed(document.querySelector("#grids-table tbody")),
-    spacers: readNamed(document.querySelector("#spacers-table tbody")),
     colors: readColors(),
     vert: document
       .getElementById("vert-list")
@@ -162,7 +161,6 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
   document.getElementById("m-mup").value = m.mup ?? 1.2;
   namedTable(document.querySelector("#glass-table tbody"), catalog.glass_types);
   namedTable(document.querySelector("#grids-table tbody"), catalog.grids);
-  namedTable(document.querySelector("#spacers-table tbody"), catalog.spacers);
   renderColors(catalog.colors);
   document.getElementById("vert-list").value = (catalog.vert || []).join(", ");
   document.getElementById("hori-list").value = (catalog.hori || []).join(", ");
