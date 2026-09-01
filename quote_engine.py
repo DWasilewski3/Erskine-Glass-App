@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 
@@ -13,6 +14,41 @@ def _num(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def parse_measure(value: Any, default: float = 0.0) -> float:
+    """Accept 22, 22.5, 1/2, 22 1/2, or 22-1/2."""
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().replace(",", "")
+    if not text:
+        return default
+    try:
+        return float(text)
+    except ValueError:
+        pass
+    text = text.replace("\u2013", "-").replace("\u2014", "-")
+    mixed = re.fullmatch(r"(-?\d+(?:\.\d+)?)\s*[-\s]\s*(\d+)\s*/\s*(\d+)", text)
+    if mixed:
+        whole, num, den = mixed.groups()
+        denom = float(den)
+        if denom == 0:
+            return default
+        whole_n = float(whole)
+        sign = -1.0 if whole_n < 0 else 1.0
+        return sign * (abs(whole_n) + float(num) / denom)
+    frac = re.fullmatch(r"(-)?\s*(\d+)\s*/\s*(\d+)", text)
+    if frac:
+        sign, num, den = frac.groups()
+        denom = float(den)
+        if denom == 0:
+            return default
+        return (-1.0 if sign else 1.0) * float(num) / denom
+    return default
 
 
 def _lookup_price(items: list[dict], name: Any, blank_price: float) -> float:
@@ -27,8 +63,8 @@ def _lookup_price(items: list[dict], name: Any, blank_price: float) -> float:
 
 def line_sqft(width: Any, height: Any, qty: Any) -> float:
     """Excel: IF((ROUNDUP((W*H)/144,0)*Qty)<4, 4, ROUNDUP((W*H)/144,0)*Qty)."""
-    w = _num(width)
-    h = _num(height)
+    w = parse_measure(width)
+    h = parse_measure(height)
     q = _num(qty)
     if w <= 0 or h <= 0 or q <= 0:
         return 0.0
@@ -61,7 +97,11 @@ def line_total(
 def price_line(line: dict, catalog: dict) -> dict:
     out = dict(line)
     out.pop("spacer", None)
-    sqft = line_sqft(line.get("width"), line.get("height"), line.get("qty"))
+    if line.get("width") not in (None, ""):
+        out["width"] = parse_measure(line.get("width"))
+    if line.get("height") not in (None, ""):
+        out["height"] = parse_measure(line.get("height"))
+    sqft = line_sqft(out.get("width"), out.get("height"), line.get("qty"))
     total = line_total(sqft, line.get("type"), line.get("grid"), catalog)
     out["sqft"] = sqft
     out["total"] = total

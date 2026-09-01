@@ -35,12 +35,112 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;");
 }
 
+function parseMeasure(value) {
+  if (value == null || value === "") return "";
+  const text = String(value).trim().replace(/,/g, "").replace(/[–—]/g, "-");
+  if (!text) return "";
+  const direct = Number(text);
+  if (Number.isFinite(direct)) return direct;
+  const mixed = text.match(/^(-?\d+(?:\.\d+)?)\s*[-\s]\s*(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const den = Number(mixed[3]);
+    if (!den) return "";
+    const whole = Number(mixed[1]);
+    const sign = whole < 0 ? -1 : 1;
+    return sign * (Math.abs(whole) + Number(mixed[2]) / den);
+  }
+  const frac = text.match(/^(-)?\s*(\d+)\s*\/\s*(\d+)$/);
+  if (frac) {
+    const den = Number(frac[3]);
+    if (!den) return "";
+    return (frac[1] ? -1 : 1) * (Number(frac[2]) / den);
+  }
+  return "";
+}
+
+const SIXTEENTH_LABELS = [
+  "",
+  "1/16",
+  "1/8",
+  "3/16",
+  "1/4",
+  "5/16",
+  "3/8",
+  "7/16",
+  "1/2",
+  "9/16",
+  "5/8",
+  "11/16",
+  "3/4",
+  "13/16",
+  "7/8",
+  "15/16",
+];
+
+function splitMeasure(n) {
+  const abs = Math.abs(n);
+  let whole = Math.floor(abs + 1e-9);
+  let sixteenths = Math.round((abs - whole) * 16);
+  if (sixteenths === 16) {
+    whole += 1;
+    sixteenths = 0;
+  }
+  return { whole: n < 0 ? -whole : whole, sixteenths };
+}
+
+function fractionOptions(selectedSixteenths) {
+  return SIXTEENTH_LABELS.map((label, i) => {
+    const selected = i === selectedSixteenths ? " selected" : "";
+    return `<option value="${i}"${selected}>${label}</option>`;
+  }).join("");
+}
+
+function measureInput(className, value) {
+  let whole = "";
+  let sixteenths = 0;
+  const parsed = parseMeasure(value);
+  if (parsed !== "") {
+    const split = splitMeasure(parsed);
+    whole = String(split.whole);
+    sixteenths = split.sixteenths;
+  }
+  return `
+    <div class="measure">
+      <input class="${className}" type="text" inputmode="decimal" placeholder="22" title="Inches, or a mixed number like 22 1/16" value="${escapeHtml(whole)}" />
+      <select class="${className}-frac" title="Sixteenths">${fractionOptions(sixteenths)}</select>
+    </div>
+  `;
+}
+
+function readMeasure(tr, className) {
+  const typed = parseMeasure(tr.querySelector(`.${className}`).value);
+  const sixteenths = Number(tr.querySelector(`.${className}-frac`).value || 0);
+  if (typed === "") {
+    return sixteenths ? sixteenths / 16 : "";
+  }
+  if (typed < 0) return typed - sixteenths / 16;
+  return typed + sixteenths / 16;
+}
+
+function bindMeasure(tr, className) {
+  const input = tr.querySelector(`.${className}`);
+  const select = tr.querySelector(`.${className}-frac`);
+  input.addEventListener("blur", () => {
+    const parsed = parseMeasure(input.value);
+    if (parsed === "") return;
+    const split = splitMeasure(parsed);
+    input.value = String(split.whole);
+    select.value = String(split.sixteenths);
+    scheduleCalc();
+  });
+}
+
 function addLine(line = {}) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td><input class="qty" type="number" min="0" step="1" value="${line.qty ?? 1}" /></td>
-    <td><input class="width" type="number" min="0" step="0.01" value="${line.width ?? ""}" /></td>
-    <td><input class="height" type="number" min="0" step="0.01" value="${line.height ?? ""}" /></td>
+    <td>${measureInput("width", line.width)}</td>
+    <td>${measureInput("height", line.height)}</td>
     <td><input class="thick" value="${escapeHtml(String(line.thick ?? ""))}" /></td>
     <td><select class="type">${options(catalog.glass_types || [], line.type, "name")}</select></td>
     <td><select class="grid">${options(catalog.grids || [], line.grid, "name")}</select></td>
@@ -59,14 +159,16 @@ function addLine(line = {}) {
     el.addEventListener("input", scheduleCalc);
     el.addEventListener("change", scheduleCalc);
   });
+  bindMeasure(tr, "width");
+  bindMeasure(tr, "height");
   tbody.appendChild(tr);
 }
 
 function collectPayload() {
   const lines = [...tbody.querySelectorAll("tr")].map((tr) => ({
     qty: tr.querySelector(".qty").value,
-    width: tr.querySelector(".width").value,
-    height: tr.querySelector(".height").value,
+    width: readMeasure(tr, "width"),
+    height: readMeasure(tr, "height"),
     thick: tr.querySelector(".thick").value,
     type: tr.querySelector(".type").value,
     grid: tr.querySelector(".grid").value,
@@ -266,13 +368,13 @@ document.getElementById("btn-needed").addEventListener("click", () =>
 document.getElementById("btn-needed-pdf").addEventListener("click", () =>
   download("/api/export/glass-needed-pdf", "glass_needed.pdf")
 );
-async function draftEmail(url, btn, messages) {
+async function draftEmail(apiUrl, pdfUrl, pdfFallback, btn) {
   const payload = collectPayload();
   if (!payload.client_id) {
     setStatus("Select or add a client first.", false);
     return;
   }
-  const res = await fetch(url, {
+  const res = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -282,11 +384,17 @@ async function draftEmail(url, btn, messages) {
     setStatus(data.error || "Could not create the email.", false);
     return;
   }
+  await download(pdfUrl, pdfFallback);
+  const info = [
+    `To: ${data.to || "(add recipient)"}`,
+    `Subject: ${data.subject || ""}`,
+  ].join("\n") + "\n\n" + (data.body || "");
   try {
-    await navigator.clipboard.writeText(data.body || "");
-  } catch (_err) {
-    setStatus("Could not copy the message. The mail draft may still have opened.", false);
-    return;
+    await navigator.clipboard.writeText(info);
+  } catch (_ignore) {}
+  const webmail = (catalog.company && catalog.company.webmail) || "";
+  if (webmail) {
+    window.open(webmail, "_blank");
   }
   btn.classList.add("copied");
   const original = btn.textContent;
@@ -295,25 +403,20 @@ async function draftEmail(url, btn, messages) {
     btn.classList.remove("copied");
     btn.textContent = original;
   }, 1800);
-  if (data.opened && data.to) {
-    setStatus(messages.openedTo);
-  } else if (data.opened) {
-    setStatus(messages.opened);
-  } else {
-    setStatus("Message copied. Could not open the mail app automatically.");
-  }
+  setStatus(
+    "PDF downloaded. To, subject, and body copied to clipboard. Paste into your email and attach the PDF."
+  );
 }
 document.getElementById("btn-email").addEventListener("click", () =>
-  draftEmail("/api/email", document.getElementById("btn-email"), {
-    openedTo: "Email draft opened with the PDF attached. Message copied.",
-    opened: "Message copied. Draft opened. Add an email on the client to fill in To.",
-  })
+  draftEmail("/api/email", "/api/export/pdf", "quote.pdf", document.getElementById("btn-email"))
 );
 document.getElementById("btn-email-manufacturer").addEventListener("click", () =>
-  draftEmail("/api/email/manufacturer", document.getElementById("btn-email-manufacturer"), {
-    openedTo: "Manufacturer email opened with the glass needed PDF. Message copied.",
-    opened: "Message copied. Draft opened.",
-  })
+  draftEmail(
+    "/api/email/manufacturer",
+    "/api/export/glass-needed-pdf",
+    "glass_needed.pdf",
+    document.getElementById("btn-email-manufacturer")
+  )
 );
 
 const dialog = document.getElementById("client-dialog");

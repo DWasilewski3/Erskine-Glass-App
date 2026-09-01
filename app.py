@@ -234,34 +234,14 @@ def api_export_glass_needed_pdf():
     )
 
 
-def _open_email_draft(draft: dict, pdf: bytes, stem: str) -> dict:
-    opened = False
-    error = ""
-    try:
-        email_draft.open_draft(draft, pdf, stem)
-        opened = True
-    except OSError as exc:
-        error = str(exc)
-    return {
-        "ok": True,
-        "to": draft["to"],
-        "subject": draft["subject"],
-        "body": draft["body"],
-        "opened": opened,
-        "error": error,
-    }
-
-
 @app.post("/api/email")
 def api_email():
     quote, catalog = _incoming_quote()
     client = quote.get("client") or {}
     if not (client.get("name") or "").strip():
         return _json_error("Select or add a client first.")
-    pdf = exporters.build_pdf(quote, catalog)
     draft = email_draft.compose_email(quote, catalog)
-    stem = f"{client.get('name') or 'quote'}_{quote.get('quote_number') or quote.get('date') or 'draft'}"
-    return jsonify(_open_email_draft(draft, pdf, stem))
+    return jsonify({"ok": True, **draft})
 
 
 @app.post("/api/email/manufacturer")
@@ -270,10 +250,8 @@ def api_email_manufacturer():
     client = quote.get("client") or {}
     if not (client.get("name") or "").strip():
         return _json_error("Select or add a client first.")
-    pdf = exporters.build_glass_needed_pdf(quote, catalog)
     draft = email_draft.compose_manufacturer_email(quote, catalog)
-    stem = f"{client.get('name') or 'quote'}_{quote.get('quote_number') or quote.get('date') or 'draft'}_trulite"
-    return jsonify(_open_email_draft(draft, pdf, stem))
+    return jsonify({"ok": True, **draft})
 
 
 def _open_browser():

@@ -95,6 +95,7 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
       website: document.getElementById("co-website").value,
       fax: document.getElementById("co-fax").value,
       hours: document.getElementById("co-hours").value,
+      webmail: document.getElementById("co-webmail").value,
     },
     emails: catalog.emails || [],
     manufacturer: catalog.manufacturer || { name: "Trulite", email: "kbloink@trulite.com" },
@@ -155,6 +156,7 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
   document.getElementById("co-website").value = co.website || "";
   document.getElementById("co-fax").value = co.fax || "";
   document.getElementById("co-hours").value = co.hours || "";
+  document.getElementById("co-webmail").value = co.webmail || "";
   const m = catalog.multipliers || {};
   document.getElementById("m-tfee").value = m.tfee ?? 1.06;
   document.getElementById("m-factor").value = m.factor ?? 1.75;

@@ -61,7 +61,7 @@ Leave the PowerShell window open while you work. To stop the app, click that win
 1. Open **Quote**.
 2. Select a **client**, or click **Add client** and fill in name, phone, email, and address.
 3. Set the date and optional job notes.
-4. Enter line items: qty, width, height, thickness, glass type, grid, color, VERT, and HORI.
+4. Enter line items: qty, width, height, thickness, glass type, grid, color, VERT, and HORI. Width and height use inches plus 16ths (`22` and `1/16`, or type `22 1/16`).
 5. Click **Add line** for more windows. Totals update as you type.
 6. Click **Save quote**. Files are written to that client’s folder under `data\quotes`.
 

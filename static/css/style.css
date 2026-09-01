@@ -141,6 +141,19 @@ table.lines input, table.lines select, table.edit input {
   min-width: 56px;
   padding: 6px;
 }
+.measure {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.measure input {
+  width: 4.2rem;
+  min-width: 3.4rem;
+}
+.measure select {
+  width: 4.8rem;
+  min-width: 4.4rem;
+}
 table.lines .money, table.lines .sqft {
   text-align: right;
   font-variant-numeric: tabular-nums;
