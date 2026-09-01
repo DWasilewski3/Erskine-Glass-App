@@ -4,6 +4,8 @@ A local Windows app for quoting glass work. It replaces the old Excel workbook: 
 
 The app runs on your computer in a browser at [http://127.0.0.1:5000](http://127.0.0.1:5000). Quotes are stored in the `data` folder. Nothing is uploaded to the internet.
 
+Day-to-day quoting, email, and **Windows + V** clipboard steps are in [INSTRUCTIONS.md](INSTRUCTIONS.md).
+
 ## 1. Install Python
 
 You need **Python 3.10 or newer**.
@@ -56,6 +58,8 @@ Leave the PowerShell window open while you work. To stop the app, click that win
 
 ## 4. How to use it
 
+See [INSTRUCTIONS.md](INSTRUCTIONS.md) for quoting, downloads, emailing from webmail, and using **Windows + V** to paste To, subject, and body.
+
 ### Quote a job
 
 1. Open **Quote**.
@@ -75,10 +79,7 @@ To reopen a job, choose the client, pick a past quote, and click **Load**.
 
 ### Email
 
-- **Generate email** — opens a draft to the client with the quote PDF attached. The message is also copied to the clipboard.
-- **Email manufacturer** — opens a draft to Trulite (`kbloink@trulite.com`) with the glass needed PDF attached.
-
-Outlook should open the draft. The client needs an email address on file for **Generate email** to fill in **To**.
+See [INSTRUCTIONS.md](INSTRUCTIONS.md). **Generate email** and **Email manufacturer** download the PDF, copy To / subject / body into Windows clipboard history, and open webmail. Paste with **Windows + V** and attach the PDF.
 
 ### Download without saving
 

@@ -385,12 +385,16 @@ async function draftEmail(apiUrl, pdfUrl, pdfFallback, btn) {
     return;
   }
   await download(pdfUrl, pdfFallback);
-  const info = [
-    `To: ${data.to || "(add recipient)"}`,
-    `Subject: ${data.subject || ""}`,
-  ].join("\n") + "\n\n" + (data.body || "");
+  const clips = [
+    data.to || "",
+    data.subject || "",
+    data.body || "",
+  ].filter((text) => String(text).trim());
   try {
-    await navigator.clipboard.writeText(info);
+    for (const text of clips) {
+      await navigator.clipboard.writeText(text);
+      await new Promise((resolve) => window.setTimeout(resolve, 180));
+    }
   } catch (_ignore) {}
   const webmail = (catalog.company && catalog.company.webmail) || "";
   if (webmail) {
@@ -404,7 +408,7 @@ async function draftEmail(apiUrl, pdfUrl, pdfFallback, btn) {
     btn.textContent = original;
   }, 1800);
   setStatus(
-    "PDF downloaded. To, subject, and body copied to clipboard. Paste into your email and attach the PDF."
+    "PDF downloaded. To, subject, and body are in clipboard history. Press Windows+V in webmail to paste each one, then attach the PDF."
   );
 }
 document.getElementById("btn-email").addEventListener("click", () =>
