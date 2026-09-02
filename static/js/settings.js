@@ -84,6 +84,50 @@ document.querySelectorAll("[data-add]").forEach((btn) => {
   });
 });
 
+async function loadResendStatus() {
+  const status = document.getElementById("resend-status");
+  const input = document.getElementById("resend-key");
+  try {
+    const res = await fetch("/api/resend/status?verify=1");
+    const data = await res.json();
+    if (data.configured) {
+      status.textContent = data.verified === false
+        ? (data.error || "A key is saved, but Resend rejected it.")
+        : `Resend is connected. Current key ends in ${data.key_hint}.`;
+      input.placeholder = data.key_hint || "Key is set";
+    } else {
+      status.textContent = "No Resend API key yet. Emails will copy to the clipboard until you add one.";
+      input.placeholder = "Paste your Resend API key";
+    }
+  } catch (_err) {
+    status.textContent = "Could not check Resend status.";
+  }
+}
+
+document.getElementById("btn-save-resend").addEventListener("click", async () => {
+  const input = document.getElementById("resend-key");
+  const key = input.value.trim();
+  const res = await fetch("/api/resend/key", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    statusEl.textContent = data.error || "Could not save the Resend API key.";
+    return;
+  }
+  input.value = "";
+  await loadResendStatus();
+  if (!key) {
+    statusEl.textContent = "Resend API key cleared. Emails will copy to the clipboard.";
+  } else if (data.verified) {
+    statusEl.textContent = "Resend API key saved and verified. Emails will send from the quote page.";
+  } else {
+    statusEl.textContent = data.error || "Resend rejected this key. Create a key at resend.com/api-keys.";
+  }
+});
+
 document.getElementById("btn-save-settings").addEventListener("click", async () => {
   const payload = {
     company: {
@@ -95,7 +139,6 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
       website: document.getElementById("co-website").value,
       fax: document.getElementById("co-fax").value,
       hours: document.getElementById("co-hours").value,
-      webmail: document.getElementById("co-webmail").value,
     },
     emails: catalog.emails || [],
     manufacturer: catalog.manufacturer || { name: "Trulite", email: "kbloink@trulite.com" },
@@ -156,7 +199,6 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
   document.getElementById("co-website").value = co.website || "";
   document.getElementById("co-fax").value = co.fax || "";
   document.getElementById("co-hours").value = co.hours || "";
-  document.getElementById("co-webmail").value = co.webmail || "";
   const m = catalog.multipliers || {};
   document.getElementById("m-tfee").value = m.tfee ?? 1.06;
   document.getElementById("m-factor").value = m.factor ?? 1.75;
@@ -167,4 +209,5 @@ document.getElementById("btn-save-settings").addEventListener("click", async () 
   document.getElementById("vert-list").value = (catalog.vert || []).join(", ");
   document.getElementById("hori-list").value = (catalog.hori || []).join(", ");
   renderClients();
+  loadResendStatus();
 })();

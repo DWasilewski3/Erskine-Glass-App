@@ -9,19 +9,26 @@ from pathlib import Path
 
 import io
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, send_file
 
 import email_draft
 import exporters
 import quote_engine
+import resend_client
 import storage
 
 app = Flask(__name__)
 ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT / ".env")
+FROM_ADDRESS = "erskineson@erskineson.com"
 
 
-def _json_error(message: str, status: int = 400):
-    return jsonify({"error": message}), status
+def _json_error(message: str, status: int = 400, code: str | None = None):
+    payload = {"error": message}
+    if code:
+        payload["code"] = code
+    return jsonify(payload), status
 
 
 def _incoming_quote() -> dict:
@@ -234,12 +241,45 @@ def api_export_glass_needed_pdf():
     )
 
 
+def _require_client(quote: dict) -> dict:
+    client = quote.get("client") or {}
+    if not (client.get("name") or "").strip():
+        raise resend_client.ResendError("Select or add a client first.")
+    return client
+
+
+def _pdf_filename(quote: dict, suffix: str = "") -> str:
+    name = ((quote.get("client") or {}).get("name") or "quote").replace(" ", "_")
+    number = quote.get("quote_number") or quote.get("date") or "quote"
+    extra = f"_{suffix}" if suffix else ""
+    return f"{name}_{number}{extra}.pdf"
+
+
+def _send_email(draft: dict, pdf_bytes: bytes, pdf_name: str) -> str:
+    if not resend_client.is_configured():
+        raise resend_client.ResendError(
+            "Resend API key is not set. Add it in Settings.",
+            status=503,
+            code="not_configured",
+        )
+    to = str(draft.get("to") or "").strip()
+    resend_client.send_email(
+        to=to,
+        subject=str(draft.get("subject") or ""),
+        body=str(draft.get("body") or ""),
+        from_address=FROM_ADDRESS,
+        attachment=(pdf_name, pdf_bytes),
+    )
+    return to
+
+
 @app.post("/api/email")
 def api_email():
     quote, catalog = _incoming_quote()
-    client = quote.get("client") or {}
-    if not (client.get("name") or "").strip():
-        return _json_error("Select or add a client first.")
+    try:
+        _require_client(quote)
+    except resend_client.ResendError as exc:
+        return _json_error(str(exc), exc.status, exc.code)
     draft = email_draft.compose_email(quote, catalog)
     return jsonify({"ok": True, **draft})
 
@@ -247,11 +287,61 @@ def api_email():
 @app.post("/api/email/manufacturer")
 def api_email_manufacturer():
     quote, catalog = _incoming_quote()
-    client = quote.get("client") or {}
-    if not (client.get("name") or "").strip():
-        return _json_error("Select or add a client first.")
+    try:
+        _require_client(quote)
+    except resend_client.ResendError as exc:
+        return _json_error(str(exc), exc.status, exc.code)
     draft = email_draft.compose_manufacturer_email(quote, catalog)
     return jsonify({"ok": True, **draft})
+
+
+@app.post("/api/email/send")
+def api_email_send():
+    try:
+        quote, catalog = _incoming_quote()
+        _require_client(quote)
+        draft = email_draft.compose_email(quote, catalog)
+        pdf = exporters.build_pdf(quote, catalog)
+        to = _send_email(draft, pdf, _pdf_filename(quote))
+        return jsonify({"ok": True, "to": to, "message": f"Email sent to {to}."})
+    except resend_client.ResendError as exc:
+        return _json_error(str(exc), exc.status, exc.code)
+    except Exception as exc:
+        return _json_error(f"Could not send email: {exc}", 502)
+
+
+@app.post("/api/email/send-manufacturer")
+def api_email_send_manufacturer():
+    try:
+        quote, catalog = _incoming_quote()
+        _require_client(quote)
+        draft = email_draft.compose_manufacturer_email(quote, catalog)
+        pdf = exporters.build_glass_needed_pdf(quote, catalog)
+        to = _send_email(draft, pdf, _pdf_filename(quote, "glass_needed"))
+        return jsonify({"ok": True, "to": to, "message": f"Email sent to {to}."})
+    except resend_client.ResendError as exc:
+        return _json_error(str(exc), exc.status, exc.code)
+    except Exception as exc:
+        return _json_error(f"Could not send email: {exc}", 502)
+
+
+@app.get("/api/resend/status")
+def api_resend_status():
+    payload = resend_client.status()
+    if payload.get("configured") and request.args.get("verify") == "1":
+        payload.update(resend_client.verify_connection())
+    return jsonify(payload)
+
+
+@app.post("/api/resend/key")
+def api_resend_key():
+    payload = request.get_json(force=True, silent=True) or {}
+    key = str(payload.get("key") or "").strip()
+    saved = resend_client.save_api_key(key)
+    verified = {"verified": False, "error": ""}
+    if saved.get("configured"):
+        verified = resend_client.verify_connection()
+    return jsonify({"ok": True, **saved, **verified})
 
 
 def _open_browser():

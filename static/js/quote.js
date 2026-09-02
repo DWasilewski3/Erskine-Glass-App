@@ -368,54 +368,101 @@ document.getElementById("btn-needed").addEventListener("click", () =>
 document.getElementById("btn-needed-pdf").addEventListener("click", () =>
   download("/api/export/glass-needed-pdf", "glass_needed.pdf")
 );
-async function draftEmail(apiUrl, pdfUrl, pdfFallback, btn) {
-  const payload = collectPayload();
-  if (!payload.client_id) {
-    setStatus("Select or add a client first.", false);
-    return;
-  }
-  const res = await fetch(apiUrl, {
+async function copyDraftFallback(draftUrl, pdfUrl, pdfFallback, btn, originalLabel, extraMessage) {
+  const res = await fetch(draftUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(collectPayload()),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    setStatus(data.error || "Could not create the email.", false);
+    setStatus(extraMessage || data.error || "Could not create the email.", false);
+    btn.textContent = originalLabel;
+    btn.disabled = false;
     return;
   }
   await download(pdfUrl, pdfFallback);
-  const clips = [
-    data.to || "",
-    data.subject || "",
-    data.body || "",
-  ].filter((text) => String(text).trim());
+  const clips = [data.to || "", data.subject || "", data.body || ""].filter((text) =>
+    String(text).trim()
+  );
   try {
     for (const text of clips) {
       await navigator.clipboard.writeText(text);
       await new Promise((resolve) => window.setTimeout(resolve, 180));
     }
   } catch (_ignore) {}
-  const webmail = (catalog.company && catalog.company.webmail) || "";
-  if (webmail) {
-    window.open(webmail, "_blank");
-  }
   btn.classList.add("copied");
-  const original = btn.textContent;
   btn.textContent = "Copied";
+  btn.disabled = false;
   window.setTimeout(() => {
     btn.classList.remove("copied");
-    btn.textContent = original;
+    btn.textContent = originalLabel;
   }, 1800);
-  setStatus(
-    "PDF downloaded. To, subject, and body are in clipboard history. Press Windows+V in webmail to paste each one, then attach the PDF."
-  );
+  const clipboardMsg =
+    "PDF downloaded. To, subject, and body are in clipboard history. Press Windows+V to paste each one, then attach the PDF.";
+  setStatus(extraMessage ? `${extraMessage} ${clipboardMsg}` : clipboardMsg, !extraMessage);
+}
+
+async function draftEmail(sendUrl, draftUrl, pdfUrl, pdfFallback, btn) {
+  const payload = collectPayload();
+  if (!payload.client_id) {
+    setStatus("Select or add a client first.", false);
+    return;
+  }
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+  try {
+    const res = await fetch(sendUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      btn.classList.add("copied");
+      btn.textContent = "Sent";
+      btn.disabled = false;
+      setStatus(data.message || `Email sent to ${data.to || "recipient"}.`);
+      window.setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.textContent = original;
+      }, 1800);
+      return;
+    }
+    const sendFailed = !(res.status === 503 && data.code === "not_configured");
+    const extra = sendFailed
+      ? data.error || "Could not send via Resend."
+      : "";
+    await copyDraftFallback(draftUrl, pdfUrl, pdfFallback, btn, original, extra);
+  } catch (_err) {
+    await copyDraftFallback(
+      draftUrl,
+      pdfUrl,
+      pdfFallback,
+      btn,
+      original,
+      "Could not send via Resend."
+    );
+  } finally {
+    if (btn.textContent === "Sending...") {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  }
 }
 document.getElementById("btn-email").addEventListener("click", () =>
-  draftEmail("/api/email", "/api/export/pdf", "quote.pdf", document.getElementById("btn-email"))
+  draftEmail(
+    "/api/email/send",
+    "/api/email",
+    "/api/export/pdf",
+    "quote.pdf",
+    document.getElementById("btn-email")
+  )
 );
 document.getElementById("btn-email-manufacturer").addEventListener("click", () =>
   draftEmail(
+    "/api/email/send-manufacturer",
     "/api/email/manufacturer",
     "/api/export/glass-needed-pdf",
     "glass_needed.pdf",

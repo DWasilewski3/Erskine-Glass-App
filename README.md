@@ -2,9 +2,9 @@
 
 A local Windows app for quoting glass work. It replaces the old Excel workbook: pick a client, enter window sizes, and save or email a branded quote.
 
-The app runs on your computer in a browser at [http://127.0.0.1:5000](http://127.0.0.1:5000). Quotes are stored in the `data` folder. Nothing is uploaded to the internet.
+The app runs on your computer in a browser at [http://127.0.0.1:5000](http://127.0.0.1:5000). Quotes are stored in the `data` folder. When a Resend API key is set, emails are sent through Resend.
 
-Day-to-day quoting, email, and **Windows + V** clipboard steps are in [INSTRUCTIONS.md](INSTRUCTIONS.md).
+Day-to-day quoting, email, and clipboard fallback steps are in [INSTRUCTIONS.md](INSTRUCTIONS.md).
 
 ## 1. Install Python
 
@@ -41,6 +41,7 @@ That installs:
 - **openpyxl** — Excel quotes
 - **xhtml2pdf** — PDF quotes
 - **Pillow** — logo images in PDFs
+- **python-dotenv** / **requests** — Resend API email sending
 
 If `pip` is not found, use `python -m pip` as shown above.
 
@@ -58,7 +59,7 @@ Leave the PowerShell window open while you work. To stop the app, click that win
 
 ## 4. How to use it
 
-See [INSTRUCTIONS.md](INSTRUCTIONS.md) for quoting, downloads, emailing from webmail, and using **Windows + V** to paste To, subject, and body.
+See [INSTRUCTIONS.md](INSTRUCTIONS.md) for quoting, downloads, emailing through Resend, and the clipboard fallback.
 
 ### Quote a job
 
@@ -79,7 +80,7 @@ To reopen a job, choose the client, pick a past quote, and click **Load**.
 
 ### Email
 
-See [INSTRUCTIONS.md](INSTRUCTIONS.md). **Generate email** and **Email manufacturer** download the PDF, copy To / subject / body into Windows clipboard history, and open webmail. Paste with **Windows + V** and attach the PDF.
+See [INSTRUCTIONS.md](INSTRUCTIONS.md). Add a Resend API key in **Settings**. **Generate email** and **Email manufacturer** then send the message and PDF through Resend. If no key is set, the app falls back to clipboard history (**Windows + V**).
 
 ### Download without saving
 
@@ -93,6 +94,7 @@ Open **Settings** to edit:
 - Prices for glass types and grids
 - TFee, Factor, and Mup multipliers
 - Color and VERT / HORI options
+- The Resend API key (saved separately from the catalog)
 - The client list
 
 Click **Save catalog** when you are done.

@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.env
 data/last_quote.json
 data/quotes/*
 !data/quotes/.gitkeep

@@ -206,7 +206,12 @@ table.lines .money, table.lines .sqft {
   40% { transform: scale(1.06); }
   100% { transform: scale(1); }
 }
+.btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
 .btn.ghost { border-color: var(--line); background: transparent; color: var(--muted); }
+.resend-actions { margin-top: 12px; }
 .dropdown { position: relative; display: inline-block; }
 .dropdown .caret {
   display: inline-block;

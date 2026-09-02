@@ -42,29 +42,32 @@ Use **Download** for the quote PDF, Excel, or CSV. Use **Glass Needed PDF** or *
 
 ## Email a client or the manufacturer
 
-The app does not send mail for you. It prepares the text, downloads the PDF, and opens webmail so you can paste and attach.
+If a Resend API key is saved in **Settings**, the app sends the email for you from `erskineson@erskineson.com`. The quote PDF (or glass needed PDF) is attached.
 
-### Turn on Windows clipboard history (one-time)
+If no key is set, or Resend cannot send, the app falls back to clipboard history so you can paste the message in your own email.
 
-**Windows + V** opens clipboard history. The first time, click **Turn on**. After that, Windows keeps several recent copies so you can paste To, subject, and body one at a time.
+### Set up Resend (one-time)
+
+1. Create an API key at [resend.com/api-keys](https://resend.com/api-keys).
+2. Verify the `erskineson.com` domain in Resend (**Domains**).
+3. Open this app’s **Settings** page.
+4. Paste the key into **Resend integration** and click **Save API key**.
+5. The key is stored only in a local `.env` file on this computer, not in the catalog.
 
 ### Generate email (client)
 
-1. Select the client (they need an email address on file for **To**).
+1. Select the client. They need an email address on file.
 2. Click **Generate email**.
-3. The quote PDF downloads.
-4. Webmail opens in a new tab (`webmail8b.myregisteredsite.com` unless you changed it in Settings).
-5. Log in and start a **new message**.
-6. Use **Windows + V** to paste each copied item (newest is at the top):
-   - Click the **body** in the list, then click in the message body and it pastes.
-   - Click **Windows + V** again, choose the **subject**, and paste into Subject.
-   - Click **Windows + V** again, choose the **To** address, and paste into To.
-7. Attach the downloaded quote PDF.
-8. Send.
+3. If Resend is connected, the status line will say the email was sent.
+4. If Resend is not connected, the quote PDF downloads and To / subject / body are copied for **Windows + V**.
 
 ### Email manufacturer
 
-Same steps as above, but click **Email manufacturer**. That copies the Trulite address (`kbloink@trulite.com`), a “Glass needed” subject, and the manufacturer message. Attach **glass needed PDF**, not the priced quote.
+Same steps, but click **Email manufacturer**. That sends (or copies) the Trulite address (`kbloink@trulite.com`), a “Glass needed” subject, and the manufacturer message, with the **glass needed PDF** attached.
+
+### Turn on Windows clipboard history (one-time, fallback)
+
+**Windows + V** opens clipboard history. The first time, click **Turn on**. After that, Windows keeps several recent copies so you can paste To, subject, and body one at a time.
 
 ### Using Windows + V
 
@@ -79,7 +82,7 @@ Tips:
 - If **Windows + V** does nothing useful, open it once and click **Turn on**.
 - Copy order is To, then subject, then body. Body is usually the top (newest) item.
 - If a field already has old text, select that text first, then paste.
-- The PDF is a downloaded file, not a clipboard item. Attach it with your webmail’s **Attach** button (often in Downloads).
+- The PDF is a downloaded file, not a clipboard item. Attach it with your email’s **Attach** button (often in Downloads).
 
 ---
 
@@ -87,13 +90,14 @@ Tips:
 
 Open **Settings** to edit:
 
-- Company name, phone, email, website, and **Webmail URL**
+- Company name, phone, email, and website
 - Glass type and grid prices
 - TFee, Factor, and Mup
 - Colors and VERT / HORI options
+- The Resend API key (use **Save API key**)
 - The client list
 
-Click **Save catalog** when you are done.
+Click **Save catalog** when you are done with prices and clients. Save the Resend key with its own button.
 
 ---
 

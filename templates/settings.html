@@ -33,7 +33,6 @@
         <label>Website <input id="co-website" /></label>
         <label>Fax <input id="co-fax" /></label>
         <label>Hours <input id="co-hours" /></label>
-        <label>Webmail URL <input id="co-webmail" placeholder="https://webmail8b.myregisteredsite.com" /></label>
       </div>
     </section>
 
@@ -82,6 +81,20 @@
       <div class="form-grid">
         <label>VERT (comma separated) <input id="vert-list" /></label>
         <label>HORI (comma separated) <input id="hori-list" /></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Resend integration</h2></div>
+      <p class="hint" id="resend-status">Checking Resend connection…</p>
+      <div class="form-grid">
+        <label class="span-2">API key
+          <input id="resend-key" type="password" autocomplete="off" placeholder="Paste your Resend API key" />
+        </label>
+      </div>
+      <p class="hint">Create a key at resend.com/api-keys. Verify the erskineson.com domain in Resend before sending. The key is stored only in a local .env file.</p>
+      <div class="actions resend-actions">
+        <button type="button" class="btn" id="btn-save-resend">Save API key</button>
       </div>
     </section>
 
