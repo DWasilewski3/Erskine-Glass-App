@@ -165,11 +165,28 @@ def _request(method: str, path: str, action: str, **kwargs) -> dict | list | Non
 def verify_connection() -> dict:
     if not is_configured():
         return {"verified": False, "error": "Resend API key is not set."}
+    url = f"{API_BASE}/domains"
     try:
-        _request("GET", "/domains", "verify the API key")
+        response = requests.get(url, headers=_headers(), timeout=TIMEOUT)
+    except requests.RequestException as exc:
+        return {"verified": False, "error": f"Could not reach Resend: {exc}"}
+    if response.ok:
         return {"verified": True, "error": ""}
+    name = ""
+    try:
+        data = response.json()
+        if isinstance(data, dict):
+            name = str(data.get("name") or "")
+    except ValueError:
+        data = {}
+    if name == "restricted_api_key":
+        # Sending-only keys cannot list domains, but they can send mail.
+        return {"verified": True, "error": ""}
+    try:
+        _raise_for_status(response, "verify the API key")
     except ResendError as exc:
         return {"verified": False, "error": str(exc)}
+    return {"verified": False, "error": "Resend rejected the API key."}
 
 
 def _html_from_plain(body: str) -> str:
