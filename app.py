@@ -255,6 +255,13 @@ def _pdf_filename(quote: dict, suffix: str = "") -> str:
     return f"{name}_{number}{extra}.pdf"
 
 
+def _sent_message(to: str) -> str:
+    message = f"Email sent to {to}."
+    if to.lower() != FROM_ADDRESS.lower():
+        message = f"{message} A copy was sent to {FROM_ADDRESS}."
+    return message
+
+
 def _send_email(draft: dict, pdf_bytes: bytes, pdf_name: str) -> str:
     if not resend_client.is_configured():
         raise resend_client.ResendError(
@@ -269,6 +276,7 @@ def _send_email(draft: dict, pdf_bytes: bytes, pdf_name: str) -> str:
         body=str(draft.get("body") or ""),
         from_address=FROM_ADDRESS,
         attachment=(pdf_name, pdf_bytes),
+        bcc=FROM_ADDRESS,
     )
     return to
 
@@ -303,7 +311,7 @@ def api_email_send():
         draft = email_draft.compose_email(quote, catalog)
         pdf = exporters.build_pdf(quote, catalog)
         to = _send_email(draft, pdf, _pdf_filename(quote))
-        return jsonify({"ok": True, "to": to, "message": f"Email sent to {to}."})
+        return jsonify({"ok": True, "to": to, "message": _sent_message(to)})
     except resend_client.ResendError as exc:
         return _json_error(str(exc), exc.status, exc.code)
     except Exception as exc:
@@ -318,7 +326,7 @@ def api_email_send_manufacturer():
         draft = email_draft.compose_manufacturer_email(quote, catalog)
         pdf = exporters.build_glass_needed_pdf(quote, catalog)
         to = _send_email(draft, pdf, _pdf_filename(quote, "glass_needed"))
-        return jsonify({"ok": True, "to": to, "message": f"Email sent to {to}."})
+        return jsonify({"ok": True, "to": to, "message": _sent_message(to)})
     except resend_client.ResendError as exc:
         return _json_error(str(exc), exc.status, exc.code)
     except Exception as exc:
@@ -350,4 +358,4 @@ def _open_browser():
 
 if __name__ == "__main__":
     threading.Timer(0.8, _open_browser).start()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)

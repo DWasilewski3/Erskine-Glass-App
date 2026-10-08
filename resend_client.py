@@ -10,13 +10,15 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 ROOT = Path(__file__).resolve().parent
 ENV_PATH = ROOT / ".env"
 API_BASE = "https://api.resend.com"
 API_KEY_NAME = "RESEND_API_KEY"
 LEGACY_KEY_NAME = "THRYV_API_KEY"
-TIMEOUT = 30
+TIMEOUT = 60
 
 load_dotenv(ENV_PATH)
 
@@ -83,6 +85,22 @@ def save_api_key(key: str) -> dict:
     return status()
 
 
+def _session() -> requests.Session:
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=2,
+        backoff_factor=0.6,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset(["GET", "POST"]),
+        raise_on_status=False,
+    )
+    session = requests.Session()
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    return session
+
+
 def _headers() -> dict:
     key = _api_key()
     if not key:
@@ -144,7 +162,7 @@ def _raise_for_status(response: requests.Response, action: str) -> None:
 def _request(method: str, path: str, action: str, **kwargs) -> dict | list | None:
     url = f"{API_BASE}{path}"
     try:
-        response = requests.request(
+        response = _session().request(
             method,
             url,
             headers=_headers(),
@@ -152,7 +170,11 @@ def _request(method: str, path: str, action: str, **kwargs) -> dict | list | Non
             **kwargs,
         )
     except requests.RequestException as exc:
-        raise ResendError(f"Could not reach Resend: {exc}", status=502, code="network") from exc
+        raise ResendError(
+            "Could not reach Resend. Check the internet connection and try again.",
+            status=502,
+            code="network",
+        ) from exc
     _raise_for_status(response, action)
     if not response.content:
         return {}
@@ -167,7 +189,7 @@ def verify_connection() -> dict:
         return {"verified": False, "error": "Resend API key is not set."}
     url = f"{API_BASE}/domains"
     try:
-        response = requests.get(url, headers=_headers(), timeout=TIMEOUT)
+        response = _session().get(url, headers=_headers(), timeout=TIMEOUT)
     except requests.RequestException as exc:
         return {"verified": False, "error": f"Could not reach Resend: {exc}"}
     if response.ok:
@@ -205,6 +227,7 @@ def send_email(
     from_address: str,
     from_name: str = "Erskine & Sons",
     attachment: tuple[str, bytes] | None = None,
+    bcc: str | None = None,
 ) -> dict:
     address = (to or "").strip()
     if not address or "@" not in address:
@@ -220,6 +243,9 @@ def send_email(
         "text": body or "",
         "html": _html_from_plain(body),
     }
+    copy = (bcc or "").strip()
+    if copy and copy.lower() != address.lower():
+        payload["bcc"] = [copy]
     if attachment:
         filename, data = attachment
         if not data:
