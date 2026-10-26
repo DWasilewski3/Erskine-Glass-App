@@ -67,13 +67,48 @@ def _num(value) -> str:
         return str(value)
 
 
-def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
-    company = catalog.get("company") or {}
-    client = quote.get("client") or {}
-    logo = _logo_data_uri()
+def _quote_detail(line: dict) -> str:
+    parts = []
+    for key in ("type", "grid", "color"):
+        value = str(line.get(key) or "").strip()
+        if value:
+            parts.append(value)
+    vert = _num(line.get("vert"))
+    hori = _num(line.get("hori"))
+    if vert or hori:
+        parts.append(f"VERT {vert or '-'} / HORI {hori or '-'}")
+    return "  ·  ".join(parts)
+
+
+def _quote_rows(lines: list) -> list[str]:
     rows = []
-    for line in quote.get("lines") or []:
-        amount = "" if needed else f"<td class='r'>{_money(line.get('total'))}</td>"
+    for index, line in enumerate(lines):
+        band = " band" if index % 2 else ""
+        detail = _quote_detail(line)
+        detail_row = (
+            f"<tr class='detail{band}'><td colspan='5'>{detail}</td></tr>" if detail else ""
+        )
+        rows.append(
+            "<tr style='page-break-inside: avoid'>"
+            "<td colspan='5' style='padding: 0; border-bottom: 1px solid #B8B0A4'>"
+            "<table class='window' width='100%'>"
+            f"<tr class='item{band}'>"
+            f"<td class='c' width='12%'>{_num(line.get('qty'))}</td>"
+            f"<td class='c' width='24%'>{_num(line.get('width'))} × {_num(line.get('height'))}</td>"
+            f"<td class='c' width='16%'>{line.get('thick') or ''}</td>"
+            f"<td class='c' width='16%'>{_num(line.get('sqft'))}</td>"
+            f"<td class='r' width='32%'>{_money(line.get('total'))}</td>"
+            "</tr>"
+            f"{detail_row}"
+            "</table>"
+            "</td></tr>"
+        )
+    return rows
+
+
+def _needed_rows(lines: list) -> list[str]:
+    rows = []
+    for line in lines:
         rows.append(
             "<tr>"
             f"<td class='c'>{_num(line.get('qty'))}</td>"
@@ -84,15 +119,39 @@ def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
             f"<td>{line.get('color') or ''}</td>"
             f"<td class='c'>{_num(line.get('vert'))}/{_num(line.get('hori'))}</td>"
             f"<td class='c'>{_num(line.get('sqft'))}</td>"
-            f"{amount}"
             "</tr>"
         )
+    return rows
+
+
+def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
+    company = catalog.get("company") or {}
+    client = quote.get("client") or {}
+    logo = _logo_data_uri()
+    lines = quote.get("lines") or []
+    if needed:
+        rows = _needed_rows(lines)
+        header = (
+            "<th>Qty</th><th>W × H</th><th>Thick</th><th>Type</th><th>Grid</th>"
+            "<th>Color</th><th>V/H</th><th>SqFt</th>"
+        )
+        empty_cols = "8"
+        table_attrs = ' class="lines"'
+    else:
+        rows = _quote_rows(lines)
+        header = (
+            "<th class='c' width='12%'>Qty</th>"
+            "<th class='c' width='24%'>W × H</th>"
+            "<th class='c' width='16%'>Thick</th>"
+            "<th class='c' width='16%'>SqFt</th>"
+            "<th class='r' width='32%'>Amount</th>"
+        )
+        empty_cols = "5"
+        table_attrs = ' class="lines" repeat="1"'
     notes = quote.get("notes") or ""
     notes_html = f"<p class='notes'><b>Notes:</b> {notes}</p>" if notes else ""
     logo_html = f"<img class='logo' src='{logo}' />" if logo else ""
     title = "GLASS NEEDED" if needed else "QUOTE"
-    amount_th = "" if needed else "<th>Amount</th>"
-    empty_cols = "8" if needed else "9"
     if needed:
         totals = (
             f"Qty {_num(quote.get('qty_total'))}"
@@ -131,7 +190,14 @@ def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
     background-color: #1A1612; color: #F4F1EA; font-size: 8pt;
     padding: 6px 5px; text-align: left;
   }}
-  table.lines td {{ border-bottom: 1px solid #B8B0A4; padding: 6px 5px; font-size: 9pt; color: #000000; }}
+  table.lines td {{ border-bottom: 1px solid #B8B0A4; padding: 6px 5px; font-size: 10pt; color: #000000; }}
+  table.window {{ border-collapse: collapse; }}
+  table.window td {{ border-bottom: none; }}
+  table.lines tr.item td {{ border-bottom: none; padding: 7px 5px 1px 5px; }}
+  table.lines tr.detail td {{
+    font-size: 9pt; padding: 1px 8px 8px 8px; border-bottom: none;
+  }}
+  table.lines tr.band td {{ background-color: #F4F1EA; }}
   .c {{ text-align: center; }}
   .r {{ text-align: right; }}
   .totals {{ margin-top: 12px; width: 100%; }}
@@ -170,11 +236,10 @@ def render_pdf_html(quote: dict, catalog: dict, *, needed: bool = False) -> str:
       <td colspan="2"><b>Address</b><br/>{client.get("address") or "-"}</td>
     </tr>
   </table>
-  <table class="lines">
+  <table{table_attrs}>
     <thead>
       <tr>
-        <th>Qty</th><th>W × H</th><th>Thick</th><th>Type</th><th>Grid</th>
-        <th>Color</th><th>V/H</th><th>SqFt</th>{amount_th}
+        {header}
       </tr>
     </thead>
     <tbody>

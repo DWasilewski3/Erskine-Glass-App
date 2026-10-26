@@ -21,5 +21,13 @@
     "email": "dwasilewski@daydreamtechnologies.net",
     "address": "",
     "notes": "test"
+  },
+  {
+    "id": "kim-eisen",
+    "name": "Kim Eisen",
+    "phone": "616-510-9445",
+    "email": "",
+    "address": "3697 Westwood",
+    "notes": ""
   }
 ]
